@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generator Kartu Ujian – MI Al-Wathoniyah 19</title>
+<style>
+  /* Palet diambil dari logo sekolah (hijau daun) dan kertas kartu. */
+  :root {
+    --bg:#edf2ee;        /* meja kerja: hijau abu pucat */
+    --surface:#fbfcfb;   /* kertas */
+    --ink:#17211c;
+    --muted:#4d5f56;
+    --line:#c9d6ce;
+    --accent:#14513f;    /* hijau daun tua */
+    --accent-ink:#ffffff;
+    --accent-soft:#dcebe3;
+    --warn-bg:#fbf0cf;
+    --warn-line:#c28a14;
+    --warn-ink:#5a4200;
+    --err:#a3231b;
+    --serif:"Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", Georgia, serif;
+    --sans:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0f1713; --surface:#16211b; --ink:#e5eee9; --muted:#9db3a8; --line:#2b3b33;
+      --accent:#5cc49a; --accent-ink:#06231a; --accent-soft:#1d3329;
+      --warn-bg:#35301a; --warn-line:#d6a63a; --warn-ink:#f1dc95; --err:#ff8f86;
+    }
+  }
+
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:1rem/1.55 var(--sans); }
+  :focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+
+  .halaman { max-width:720px; margin:0 auto; padding:clamp(20px,5vw,56px) clamp(16px,4vw,32px) 40px; }
+
+  /* ---------- kepala ---------- */
+  h1 { font:700 clamp(1.8rem,4.6vw,2.6rem)/1.1 var(--serif); letter-spacing:-.01em; margin:0 0 10px; color:var(--accent); }
+  .sub { margin:0 0 clamp(24px,5vw,40px); max-width:52ch; color:var(--muted); font-size:1.05rem; }
+
+    .langkah { min-width:0; }
+
+  /* ---------- langkah ---------- */
+  .step { display:grid; grid-template-columns:2.6rem minmax(0,1fr); column-gap:6px; padding:0 0 clamp(26px,4vw,38px); position:relative; }
+  .step + .step, #hasil .step:first-child { padding-top:clamp(22px,3.5vw,32px); border-top:1px solid var(--line); }
+  .nomor { font:700 2rem/1 var(--serif); color:var(--accent); font-variant-numeric:lining-nums; }
+  h2 { font:700 1.3rem/1.25 var(--serif); margin:0 0 6px; }
+  .isi > p { margin:0 0 12px; max-width:58ch; }
+  .catatan { color:var(--muted); font-size:.94rem; }
+  .catatan b { color:var(--ink); font-weight:600; }
+  .isi > p.aturan { margin:16px 0 0; }
+
+  /* input file */
+  input[type=file] { display:block; width:100%; margin-top:14px; padding:18px; background:var(--surface); color:var(--ink); border:2px dashed var(--line); border-radius:6px; font:inherit; cursor:pointer; transition:border-color .15s, background-color .15s; }
+  input[type=file]:hover { border-color:var(--accent); background:var(--accent-soft); }
+  input[type=file]::file-selector-button { font:700 1rem var(--sans); padding:10px 18px; margin-right:14px; border:0; border-radius:6px; background:var(--accent); color:var(--accent-ink); cursor:pointer; }
+  .galat { color:var(--err); font-weight:600; margin-top:12px; }
+
+  /* periksa data */
+  #judulHasil { display:block; font:700 1.15rem/1.3 var(--serif); margin:6px 0 0; }
+  .peringatan { background:var(--warn-bg); color:var(--warn-ink); border-left:4px solid var(--warn-line); padding:10px 14px; margin:14px 0 4px; font-size:.95rem; }
+  .peringatan ul { margin:6px 0 0; padding-left:20px; }
+  .peringatan li + li { margin-top:3px; }
+  .tabel-wrap { overflow-x:auto; margin-top:14px; border-top:2px solid var(--ink); }
+  table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:8px 12px 8px 0; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { font-weight:600; color:var(--muted); font-size:.9rem; }
+  th.angka, td.angka { text-align:right; padding-right:24px; }
+  td:last-child { font-family:var(--serif); font-weight:700; letter-spacing:.02em; }
+
+  /* atur judul kartu */
+  .bidang { display:flex; flex-wrap:wrap; gap:14px 18px; margin-top:14px; }
+  .field { display:flex; flex-direction:column; gap:6px; flex:1 1 11rem; min-width:0; }
+  .field > span { font-weight:600; font-size:.9rem; color:var(--muted); }
+  select, .thn { font:inherit; font-size:1.05rem; color:var(--ink); background:var(--surface); border:2px solid var(--line); border-radius:6px; padding:10px 12px; min-height:48px; }
+  select { cursor:pointer; width:100%; }
+  select:hover, .thn:hover { border-color:var(--accent); }
+  [aria-invalid="true"] { border-color:var(--err); }
+  .tahun { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:20px; font:700 1.1rem var(--serif); letter-spacing:.02em; }
+  .tahun .lbl { margin-right:6px; }
+  .thn { width:4.4rem; text-align:center; font-family:var(--serif); font-weight:700; }
+  .pratinjau { margin:14px 0 0; color:var(--muted); font-size:.94rem; min-height:1.5em; }
+  .pratinjau b { color:var(--ink); font-weight:600; }
+
+  /* tombol unduh */
+  .baris { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+  button { font:700 1rem var(--sans); padding:13px 22px; border-radius:6px; border:0; background:var(--accent); color:var(--accent-ink); cursor:pointer; min-height:48px; }
+  button:hover:not(:disabled) { filter:brightness(1.12); }
+  button:active:not(:disabled) { transform:translateY(1px); }
+  button:disabled { opacity:.55; cursor:progress; }
+  .manual b { color:var(--ink); }
+
+
+  /* ---------- kaki ---------- */
+  .kaki { margin-top:clamp(28px,5vw,48px); padding-top:16px; padding-left:60px; border-top:1px solid var(--line); color:var(--muted); font-size:.94rem; }
+  .kaki b { color:var(--ink); font-weight:600; }
+
+  [hidden] { display:none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<main class="halaman">
+  <h1>Generator Kartu Ujian</h1>
+  <p class="sub">Nama, Kelas, dan Nomor Ujian Terisi Otomatis Mengikuti Excel</p>
+
+  <div class="langkah">
+
+    <section class="step" aria-labelledby="l1">
+      <div class="nomor" aria-hidden="true">1</div>
+      <div class="isi">
+        <h2 id="l1">Unggah Excel Data Siswa Dibawah</h2>
+        <p class="catatan">Pilih file .xlsx berisi daftar siswa.</p>
+        <input id="file" type="file" accept=".xlsx" aria-labelledby="l1">
+        <div id="galat" class="galat" role="alert" hidden></div>
+      </div>
+    </section>
+
+    <div id="hasil" hidden>
+      <section class="step" aria-labelledby="l2">
+        <div class="nomor" aria-hidden="true">2</div>
+        <div class="isi">
+          <h2 id="l2">Periksa data</h2>
+          <p class="catatan">Cocokkan jumlah siswa dan rentang nomor ujian tiap kelas. Baca peringatan (jika ada) sebelum lanjut.</p>
+          <strong id="judulHasil"></strong>
+          <div id="peringatan" class="peringatan" hidden></div>
+          <div class="tabel-wrap">
+            <table>
+              <thead><tr><th>Kelas</th><th class="angka">Siswa</th><th>No. ujian</th></tr></thead>
+              <tbody id="isiTabel"></tbody>
+            </table>
+          </div>
+          <p class="catatan aturan">Nomor ujian disusun dari kode sekolah 19, tingkat kelas 2 digit, dan nomor urut 3 digit. Kelas A dan B sama-sama mulai dari 001.</p>
+        </div>
+      </section>
+
+      <section class="step" aria-labelledby="l3">
+        <div class="nomor" aria-hidden="true">3</div>
+        <div class="isi">
+          <h2 id="l3">Atur judul kartu</h2>
+          <p class="catatan">Pilih jenis ujian dan semester, lalu isi tahun pelajaran (dua digit terakhir). <b>Semua wajib diisi</b> supaya tidak ada kartu yang tercetak dengan tahun lama.</p>
+          <div class="bidang">
+            <label class="field"><span>Jenis ujian</span>
+              <select id="jenis"><option value="">Pilih…</option></select>
+            </label>
+            <label class="field"><span>Semester</span>
+              <select id="semester"><option value="">Pilih…</option></select>
+            </label>
+          </div>
+          <div class="tahun" role="group" aria-labelledby="lt">
+            <span id="lt" class="lbl">TAHUN PELAJARAN</span>
+            <span aria-hidden="true">20</span>
+            <input id="thAwal" class="thn" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="__" aria-label="Tahun awal, dua digit terakhir">
+            <span aria-hidden="true">–</span>
+            <span aria-hidden="true">20</span>
+            <input id="thAkhir" class="thn" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="__" aria-label="Tahun akhir, dua digit terakhir">
+          </div>
+          <p id="pratinjau" class="pratinjau" aria-live="polite"></p>
+          <div id="galatJudul" class="galat" role="alert" hidden></div>
+        </div>
+      </section>
+
+      <section class="step" aria-labelledby="l4">
+        <div class="nomor" aria-hidden="true">4</div>
+        <div class="isi">
+          <h2 id="l4">Unduh kartu</h2>
+          <p class="catatan"><b>Klik Tombol Di bawah</b>, File Word Berisi Kartu Semua Siswa.</p>
+          <div class="baris"><button id="btnUnduh" type="button">Unduh kartu (Word)</button></div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <p class="kaki">File Excel dibaca langsung di browser ini dan <b>tidak dikirim ke server mana pun</b>.</p>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
